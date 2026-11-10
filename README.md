@@ -1,2 +1,2 @@
 # FP2PS
-deepseek写的
+AI写的
