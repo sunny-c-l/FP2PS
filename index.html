@@ -27,7 +27,7 @@
   #hitmarker.headshot .cross-h, #hitmarker.headshot .cross-v { background: #ff0000; box-shadow: 0 0 6px #ff0000; }
   #hitmarker.headshot .diag-tl, #hitmarker.headshot .diag-tr, #hitmarker.headshot .diag-bl, #hitmarker.headshot .diag-br { width: 16px; background: #ff0000; box-shadow: 0 0 6px #ff0000; }
 
-  #killFeedbackContainer { position: fixed; left: 50%; bottom: 25%; transform: translateX(-50%); pointer-events: none; z-index: 20; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; }
+  #killFeedbackContainer { position: fixed; left: 50%; bottom: 14%; transform: translateX(-50%); pointer-events: none; z-index: 20; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; }
   .kill-feedback-item { display: flex; flex-direction: column; align-items: center; gap: 4px; animation: fadeKillItemOut 0.4s ease-in 1s forwards; }
   .kill-feedback-icon { width: 48px; height: 48px; fill: #fff; animation: popKill 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)); }
   .kill-feedback-icon.headshot { fill: #ff2020; animation: popKillHs 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; filter: drop-shadow(0 0 12px rgba(255, 0, 0, 1)); }
@@ -296,7 +296,8 @@
       <option value="ffa">自由混战 (个人乱斗)</option>
       <option value="tdm">团队死斗</option>
       <option value="domination">团队占点</option>
-      <option value="duel">单挑模式 (1v1)</option>
+      <option value="duel">单挑模式 (1v1 回合制，先到10分)</option>
+      <option value="gungame">武器升级 (击杀换枪，匕首击杀获胜)</option>
     </select>
   </div>
   <div class="input-group">
@@ -470,7 +471,7 @@ const WEAPONS = {
   dmr: { id: 'dmr', name: 'SKS', type: 'dmr', slot: 5, damage: 55, headshotMultiplier: 2.5, fireRate: 200, automatic: false, magSize: 10, reserveAmmo: 40, reloadTime: 2.8, bulletSpeed: 160, spread: 0.004, recoil: { vertical: 0.03, horizontal: 0.008, recovery: 7 }, adsFov: 60, adsSensMultiplier: 0.45, viewOffset: { x: 0.16, y: -0.15, z: -0.42 }, adsOffset: { x: 0, y: -0.135, z: -0.28 } },
   sniper: { id: 'sniper', name: 'AWP', type: 'sniper', slot: 6, damage: 120, headshotMultiplier: 3.0, fireRate: 50, automatic: false, magSize: 5, reserveAmmo: 20, reloadTime: 3.6, bulletSpeed: 200, spread: 0.001, recoil: { vertical: 0.045, horizontal: 0.012, recovery: 5 }, adsFov: 26, adsSensMultiplier: 0.35, viewOffset: { x: 0.15, y: -0.14, z: -0.46 }, adsOffset: { x: 0, y: -0.065, z: -0.25 } },
   barrett: { id: 'barrett', name: '巴雷特', type: 'sniper', slot: 13, damage: 200, headshotMultiplier: 2.5, fireRate: 40, automatic: false, magSize: 10, reserveAmmo: 30, reloadTime: 4.0, bulletSpeed: 250, spread: 0.002, recoil: { vertical: 0.1, horizontal: 0.02, recovery: 4 }, adsFov: 20, adsSensMultiplier: 0.3, viewOffset: { x: 0.15, y: -0.14, z: -0.46 }, adsOffset: { x: 0, y: -0.065, z: -0.25 } },
-  knife: { id: 'knife', name: '战术匕首', type: 'knife', slot: 7, damage: 65, headshotMultiplier: 2.0, fireRate: 300, automatic: false, magSize: 0, reserveAmmo: 0, reloadTime: 0, bulletSpeed: 0, spread: 0, recoil: { vertical: 0, horizontal: 0, recovery: 10 }, adsFov: 75, adsSensMultiplier: 1.0, viewOffset: { x: 0.24, y: -0.18, z: -0.44 }, adsOffset: { x: 0.24, y: -0.18, z: -0.44 } },
+  knife: { id: 'knife', name: '战术匕首', type: 'knife', slot: 7, damage: 65, headshotMultiplier: 2.0, fireRate: 300, automatic: false, magSize: 0, reserveAmmo: 0, reloadTime: 0, bulletSpeed: 0, spread: 0, recoil: { vertical: 0, horizontal: 0, recovery: 10 }, adsFov: 75, adsSensMultiplier: 1.0, viewOffset: { x: 0.10, y: -0.15, z: -0.50 }, adsOffset: { x: 0.10, y: -0.15, z: -0.50 } },
   lmg: { id: 'lmg', name: 'M249', type: 'lmg', slot: 8, damage: 35, headshotMultiplier: 2.0, fireRate: 650, automatic: true, magSize: 100, reserveAmmo: 200, reloadTime: 4.5, bulletSpeed: 160, spread: 0.018, recoil: { vertical: 0.016, horizontal: 0.012, recovery: 6 }, adsFov: 65, adsSensMultiplier: 0.5, viewOffset: { x: 0.19, y: -0.16, z: -0.48 }, adsOffset: { x: 0, y: -0.14, z: -0.32 } }
 };
 function defWeapon(id, name, type, o) {
@@ -489,6 +490,21 @@ defWeapon('s12k', 'S12K', 'shotgun', { damage: 11, headshotMultiplier: 2, fireRa
 defWeapon('pkm', 'PKM', 'lmg', { damage: 38, headshotMultiplier: 2, fireRate: 600, magSize: 100, reserveAmmo: 200, reloadTime: 5.0, bulletSpeed: 160, spread: 0.02, recoil: { vertical: 0.018, horizontal: 0.013, recovery: 6 }, adsFov: 65, adsSensMultiplier: 0.5, viewOffset: { x: 0.19, y: -0.16, z: -0.48 }, adsOffset: { x: 0, y: -0.14, z: -0.32 }, model: { rec: 0.36, bar: 0.5, hg: 'woodDark', hgl: 0.18, stock: 'wood', mag: 'box', sight: 'iron' } });
 defWeapon('svd', 'SVD', 'dmr', { damage: 62, headshotMultiplier: 2.5, automatic: false, fireRate: 190, magSize: 10, reserveAmmo: 40, reloadTime: 2.9, spread: 0.004, bulletSpeed: 180, recoil: { vertical: 0.032, horizontal: 0.009, recovery: 7 }, adsFov: 50, adsSensMultiplier: 0.42, viewOffset: { x: 0.16, y: -0.15, z: -0.42 }, adsOffset: { x: 0, y: -0.135, z: -0.28 }, model: { rec: 0.26, bar: 0.42, hg: 'woodMid', hgl: 0.28, stock: 'wood', sl: 0.24, mag: 'curved', sight: 'reddot' } });
 defWeapon('mini14', 'Mini-14', 'dmr', { damage: 42, headshotMultiplier: 2.5, automatic: false, fireRate: 360, magSize: 20, reserveAmmo: 80, reloadTime: 2.5, spread: 0.005, recoil: { vertical: 0.02, horizontal: 0.007, recovery: 8 }, adsFov: 60, adsSensMultiplier: 0.5, viewOffset: { x: 0.16, y: -0.15, z: -0.42 }, adsOffset: { x: 0, y: -0.135, z: -0.28 }, model: { rec: 0.24, bar: 0.36, hg: 'woodMid', hgl: 0.24, stock: 'wood', sl: 0.22, mag: 'straight', sight: 'reddot' } });
+Object.assign(WEAPONS.rifle, { model: { rec: 0.22, bar: 0.36, hg: 'polymer', hgl: 0.26, handle: true, stock: 'fixed', sl: 0.16, mag: 'straight', sight: 'iron' } });
+Object.assign(WEAPONS.ak, { model: { rec: 0.26, bar: 0.4, hg: 'woodMid', hgl: 0.22, gas: true, stock: 'wood', sl: 0.2, gm: 'woodDark', mag: 'curved', sight: 'iron', col: 'metalDark' } });
+Object.assign(WEAPONS.m4, { model: { rec: 0.22, bar: 0.34, hg: 'polymer', hgl: 0.28, round: true, stock: 'fixed', sl: 0.12, mag: 'straight', sight: 'reddot', col: 'metalLight', brake: true } });
+Object.assign(WEAPONS.scar.model, { vgrip: true, rh: 0.07, col: 'sand', sm: 'sand', brake: true });
+Object.assign(WEAPONS.p90.model, { rec: 0.34, bar: 0.05, rh: 0.085, col: 'metalLight', stock: 'fixed', sl: 0.1, thumb: true });
+Object.assign(WEAPONS.mp7.model, { sil: true });
+Object.assign(WEAPONS.mac10.model, { rec: 0.17, bar: 0.06, rh: 0.1, sil: true });
+Object.assign(WEAPONS.tommy.model, { fins: true, vgrip: true, brake: true });
+Object.assign(WEAPONS.awm.model, { col: 'green', sm: 'green', bipod: true, brake: true, thumb: true });
+Object.assign(WEAPONS.s12k.model, { sight: 'reddot', rh: 0.075, vgrip: true });
+Object.assign(WEAPONS.pkm.model, { bipod: true, handle: true, col: 'metalDark', gas: true });
+Object.assign(WEAPONS.svd.model, { brake: true, thumb: true });
+Object.assign(WEAPONS.mini14.model, { sight: 'iron' });
+Object.assign(WEAPONS.usp.model, { dot: true });
+Object.assign(WEAPONS.revolver.model, { gm: 'woodMid' });
 const WEAPON_ORDER = ['rifle', 'ak', 'm4', 'scar', 'pistol', 'usp', 'deagle', 'revolver', 'smg', 'mp7', 'p90', 'mac10', 'tommy', 'shotgun', 's12k', 'dmr', 'svd', 'mini14', 'sniper', 'awm', 'barrett', 'lmg', 'pkm', 'knife'];
 
 function slotForWeaponType(type) {
@@ -504,7 +520,7 @@ function slotDisplayName(slot) {
 
 // ================= Three.js 初始化 =================
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -573,7 +589,7 @@ function setupMap(mapId) {
         const child = scene.children[i];
         if (child !== camera && child !== hemiLight && child !== sun) scene.remove(child);
     }
-    _terrain = null; colliders.length = 0; shootables.length = 0; targets.length = 0; activeZombies.length = 0; chunks.length = 0; bloodDrops.length = 0;
+    _terrain = null; pools.length = 0; acids.length = 0; colliders.length = 0; shootables.length = 0; targets.length = 0; activeZombies.length = 0; chunks.length = 0; bloodDrops.length = 0;
     dominationZone.mesh = null;
 
     const cfg = MAPS[mapId] || MAPS.range;
@@ -590,14 +606,14 @@ function setupMap(mapId) {
 
     const deckMat = new THREE.MeshStandardMaterial({ color: 0x4f4b44, roughness: 0.9 });
     const stepMat = new THREE.MeshStandardMaterial({ color: 0x625d52, roughness: 0.9 });
-    function addBox(x, z, w, d, h, y0 = 0, mat = null) {
+    function addBox(x, z, w, d, h, y0 = 0, mat = null, shadow = h > 1.5) {
         const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat || wallMat);
-        mesh.position.set(x, y0 + h / 2, z); mesh.castShadow = true; mesh.receiveShadow = true;
+        mesh.position.set(x, y0 + h / 2, z); mesh.castShadow = shadow; mesh.receiveShadow = true; mesh.updateMatrix(); mesh.matrixAutoUpdate = false;
         scene.add(mesh); addCollider(mesh); return mesh;
     }
     // 台阶：从 (x0,z0) 沿 (dx,dz) 方向逐级升高，每级 run 长、rise 高（玩家可自动踏上）
     function stairs(x0, z0, dx, dz, n, run, wid, rise) {
-        for (let i = 0; i < n; i++) addBox(x0 + dx * (i + 0.5) * run, z0 + dz * (i + 0.5) * run, dx ? run : wid, dz ? run : wid, (i + 1) * rise, 0, stepMat);
+        for (let i = 0; i < n; i++) addBox(x0 + dx * (i + 0.5) * run, z0 + dz * (i + 0.5) * run, dx ? run : wid, dz ? run : wid, (i + 1) * rise, 0, stepMat, false);
     }
     if (mapId === 'duel') {
         const groundMat = new THREE.MeshStandardMaterial({ color: cfg.ground, roughness: 0.9 });
@@ -653,6 +669,38 @@ function setupMap(mapId) {
         addBox(-30, 6, 4, 4, 2, 0, crateMat); addBox(30, -6, 4, 4, 2, 0, crateMat);
         addBox(-28, -12, 3, 3, 1.5, 0, crateMat); addBox(28, 12, 3, 3, 1.5, 0, crateMat);
         addBox(-8, 33, 3, 3, 1.5, 0, crateMat); addBox(8, -33, 3, 3, 1.5, 0, crateMat);
+
+        // ---- 密集建筑：带门窗的房屋（墙高3.4m，屋顶3.7m可登顶），集装箱，阶梯箱 ----
+        const wallSeg = (cx, cz, len, alongX, h, ops) => {
+            let pos = -len / 2;
+            const put = (a, b, y0, hh) => { if (b - a < 0.05 || hh < 0.05) return; const c = (a + b) / 2, l = b - a; if (alongX) addBox(cx + c, cz, l, 0.4, hh, y0); else addBox(cx, cz + c, 0.4, l, hh, y0); };
+            ops.sort((p, q) => p.c - q.c);
+            for (const o of ops) { const a = o.c - o.w / 2, b = o.c + o.w / 2; put(pos, a, 0, h); if (o.sill > 0) put(a, b, 0, o.sill); if (o.top < h) put(a, b, o.top, h - o.top); pos = b; }
+            put(pos, len / 2, 0, h);
+        };
+        const DOOR = { c: 0, w: 2.2, sill: 0, top: 2.5 };
+        const house = (cx, cz, w, d, doorSide) => {
+            const h = 3.4, win = c => ({ c, w: 1.2, sill: 1.0, top: 2.3 });
+            wallSeg(cx, cz - d / 2, w, true, h, doorSide === 'n' ? [DOOR] : [win(w / 4)]);
+            wallSeg(cx, cz + d / 2, w, true, h, doorSide === 's' ? [DOOR] : [win(-w / 4)]);
+            wallSeg(cx - w / 2, cz, d, false, h, doorSide === 'w' ? [DOOR] : [win(d / 4)]);
+            wallSeg(cx + w / 2, cz, d, false, h, doorSide === 'e' ? [DOOR] : [win(-d / 4)]);
+            addBox(cx, cz, w + 0.2, d + 0.2, 0.3, h, deckMat);
+            addBox(cx + w * 0.25, cz - d * 0.25, 1.2, 1.2, 1.0, 0, crateMat);
+        };
+        const roofStairs = (x0, z0, dx, dz) => stairs(x0, z0, dx, dz, 9, 0.6, 2.2, 3.7 / 9);
+        house(-27, -18, 6, 6, 'n'); roofStairs(-18.6, -18, -1, 0);
+        house(27, -18, 6, 6, 's'); roofStairs(18.6, -18, 1, 0);
+        house(-27, 18, 6, 6, 's'); roofStairs(-18.6, 20, -1, 0);
+        house(27, 18, 6, 6, 'n'); roofStairs(18.6, 20, 1, 0);
+        house(-14, 32, 6, 5, 'e'); roofStairs(-22.4, 32, 1, 0);
+        house(14, 32, 6, 5, 'w'); roofStairs(22.4, 32, -1, 0);
+        house(-14, -33, 6, 5, 'e'); roofStairs(-22.4, -33, 1, 0);
+        house(14, -33, 6, 5, 'w'); roofStairs(22.4, -33, -1, 0);
+        house(-13, -8, 5, 5, 'e'); house(13, -8, 5, 5, 'w');
+        // 集装箱 + 阶梯箱（箱1.2m → 集装箱2.4m）
+        [[0, -14, 6, 2.4], [-12, 27, 6, 2.4], [12, 27, 6, 2.4], [-34, 0, 2.4, 6], [34, 0, 2.4, 6]].forEach(([x, z, w, d]) => addBox(x, z, w, d, 2.4, 0, crateMat));
+        addBox(-4, -17, 2, 2, 1.2, 0, crateMat); addBox(5, 27, 2, 2, 1.2, 0, crateMat); addBox(-31, 3.5, 2, 2, 1.2, 0, crateMat); addBox(31, -3.5, 2, 2, 1.2, 0, crateMat);
 
         if (gameMode === 'range') for (let i = 0; i < 6; i++) addStaticTarget(-10 + i * 4, -10, i);
     }
@@ -837,6 +885,7 @@ let isBoltAction = false;
 let boltActionDuration = 0.8;
 let bobPhase = 0, sprintBlend = 0, isSprinting = false, lastHurt = 0, killStreak = 0, lastKillT = 0;
 const holster = { t: 0, pending: null };
+let matchTimeLeft = 0, matchOver = false, timerAcc = 0;
 let knifeAttackState = 0;
 let knifeAttackTimer = 0;
 let knifeDidHit = false;
@@ -971,7 +1020,7 @@ weaponSelectMenu.addEventListener('click', (e) => { if (e.target === weaponSelec
 
 // ================= 特效 =================
 const chunks = [];
-const bloodDrops = [];
+const bloodDrops = []; const pools = []; const acids = [];
 const bloodGeo = new THREE.SphereGeometry(0.045, 6, 6);
 
 function explodeTarget(t) {
@@ -986,7 +1035,7 @@ function explodeTarget(t) {
     v.y += 1 + Math.random() * 2.5;
     chunks.push({ mesh: chunk, velocity: v, angular: new THREE.Vector3((Math.random()-0.5)*8, (Math.random()-0.5)*8, (Math.random()-0.5)*8), life: CHUNK_LIFE, settled: false });
   }
-  spawnBloodSpray(center);
+  spawnBloodSpray(center); spawnBloodPool(t.position);
 }
 function spawnBloodSpray(c) {
   for (let i = 0; i < 28; i++) {
@@ -1017,6 +1066,33 @@ function updateBloodDrops(dt) {
     d.velocity.y -= 18 * dt; d.mesh.position.addScaledVector(d.velocity, dt);
     const gy = getGroundHeight(d.mesh.position.x, d.mesh.position.z);
     if (d.mesh.position.y < gy + 0.03) { d.mesh.position.y = gy + 0.03; d.velocity.set(0,0,0); d.mesh.material.opacity = Math.min(1, d.life * 1.5); }
+  }
+}
+
+const poolGeo = new THREE.CircleGeometry(1, 20);
+function spawnBloodPool(p) {
+  const mat = new THREE.MeshBasicMaterial({ color: 0x6a0000, transparent: true, opacity: 0.85, depthWrite: false });
+  const m = new THREE.Mesh(poolGeo, mat); m.rotation.x = -Math.PI / 2; m.position.set(p.x, getGroundHeight(p.x, p.z, p.y + 0.6) + 0.03, p.z); m.scale.setScalar(0.1); scene.add(m);
+  pools.push({ m, age: 0 }); if (pools.length > 20) { const o = pools.shift(); scene.remove(o.m); o.m.material.dispose(); }
+}
+function updatePools(dt) {
+  for (let i = pools.length - 1; i >= 0; i--) {
+    const q = pools[i]; q.age += dt; q.m.scale.setScalar(Math.min(1.1, 0.1 + q.age * 1.6));
+    if (q.age > 12) { q.m.material.opacity = Math.max(0, 0.85 - (q.age - 12) * 0.4); if (q.age > 14) { scene.remove(q.m); q.m.material.dispose(); pools.splice(i, 1); } }
+  }
+}
+const acidGeo = new THREE.SphereGeometry(0.18, 8, 8), acidMat = new THREE.MeshBasicMaterial({ color: 0x7cff3a });
+function spawnAcid(from, dmg) { // 远程丧尸的酸液弹
+  const m = new THREE.Mesh(acidGeo, acidMat); m.position.set(from.x, from.y + 1.5, from.z); scene.add(m);
+  const v = new THREE.Vector3(playerPos.x, playerPos.y + 1.2, playerPos.z).sub(m.position).normalize().multiplyScalar(13);
+  acids.push({ m, v, dmg, life: 3 });
+}
+function updateAcids(dt) {
+  for (let i = acids.length - 1; i >= 0; i--) {
+    const a = acids[i]; a.life -= dt; a.m.position.addScaledVector(a.v, dt);
+    let blocked = false; for (const { box } of colliders) if (box.containsPoint(a.m.position)) { blocked = true; break; }
+    const d = Math.hypot(a.m.position.x - playerPos.x, a.m.position.y - (playerPos.y + 1.0), a.m.position.z - playerPos.z);
+    if (a.life <= 0 || blocked || d < 0.7) { if (!blocked && a.life > 0 && !isDead) takeDamage(a.dmg); scene.remove(a.m); acids.splice(i, 1); }
   }
 }
 
@@ -1210,6 +1286,12 @@ function setupConnection(conn) {
             else { spawnHitEffect(new THREE.Vector3(data.x, data.y, data.z), 'body'); if (isHost) broadcastToOthers(conn, data); }
             if (isHost) broadcastToOthers(conn, data);
         }
+        else if (data.type === 'timer') matchTimeLeft = data.left;
+        else if (data.type === 'match_end') onMatchEnd(data.text);
+        else if (data.type === 'match_restart') restartMatch();
+        else if (data.type === 'round_reset') scheduleRoundReset();
+        else if (data.type === 'gg_win') { if (isHost) hostEndMatch((playerNames[data.id] || '玩家') + ' 率先用匕首击杀，获胜！'); }
+        else if (data.type === 'player_left') { removeRemotePlayer(data.id); delete playerTeams[data.id]; delete playerNames[data.id]; delete playerKills[data.id]; updateScoreBoardUI(); updateRoomUI(); }
         else if (data.type === 'player_died') handlePlayerDiedMessage(conn, data);
     });
     conn.on('close', () => {
@@ -1217,7 +1299,8 @@ function setupConnection(conn) {
             const idx = connections.indexOf(conn);
             if (idx > -1) connections.splice(idx, 1);
             removeRemotePlayer(conn.peer);
-            delete playerTeams[conn.peer]; delete playerNames[conn.peer];
+            delete playerTeams[conn.peer]; delete playerNames[conn.peer]; delete playerKills[conn.peer];
+            broadcastToAll({ type: 'player_left', id: conn.peer }); updateScoreBoardUI();
             broadcastPlayerList(); updateRoomUI();
         } else { alert('房主已断开连接'); leaveGame(); }
     });
@@ -1238,18 +1321,20 @@ function handlePlayerDiedMessage(conn, data) {
         kills++; killCountEl.textContent = kills;
         if (data.isHeadshot) { headshots++; headshotCountEl.textContent = headshots; }
         triggerKillFeedback(data.isHeadshot, data.victimName || (playerNames[data.id] || '敌人'));
+        onMyKill();
     }
     if (isHost) {
         updateScoreOnKill(data);
         broadcastToAll({ type: 'score_update', teamScores, playerKills });
         broadcastToOthers(conn, data);
+        if (gameMode === 'duel') hostDuelCheck();
     }
 }
 function updateScoreOnKill(data) {
     if (gameMode === 'tdm' || gameMode === 'domination') {
         const victimTeam = playerTeams[data.id]; const killerTeam = playerTeams[data.shooterId];
         if (killerTeam && victimTeam && killerTeam !== victimTeam) teamScores[killerTeam]++;
-    } else if (gameMode === 'ffa' || gameMode === 'duel') {
+    } else if (gameMode === 'ffa' || gameMode === 'duel' || gameMode === 'gungame') {
         if (data.shooterId && data.shooterId !== data.id) playerKills[data.shooterId] = (playerKills[data.shooterId] || 0) + 1;
     }
     updateScoreBoardUI();
@@ -1295,7 +1380,7 @@ function updateRoomUI() {
 }
 let lastBroadcastTime = 0;
 function broadcastState() {
-    if (gameMode !== 'ffa' && gameMode !== 'tdm' && gameMode !== 'domination' && gameMode !== 'duel') return;
+    if (gameMode !== 'ffa' && gameMode !== 'tdm' && gameMode !== 'domination' && gameMode !== 'duel' && gameMode !== 'gungame') return;
     if (!matchStarted) return;
     broadcastToAll({ type: 'state', id: myPeerId, name: myName, pos: { x: playerPos.x, y: playerPos.y, z: playerPos.z }, yaw: yaw, pitch: pitch, stance: stance, weapon: currentWeaponId });
 }
@@ -1303,9 +1388,9 @@ function spawnRemoteBullet(data) {
     spawnVisualBullet(new THREE.Vector3(data.sx, data.sy, data.sz), new THREE.Vector3(data.ex, data.ey, data.ez), { bulletSpeed: 150 });
 }
 function handleLocalTakeDamage(data) {
-    if (isDead) return;
+    if (isDead || matchOver) return;
     if (spawnInvincibleTimer > 0) return; // 无敌
-    playerHP -= data.damage;
+    playerHP -= data.damage; lastHurt = performance.now();
     updateHealthUI();
     document.getElementById('damageOverlay').style.opacity = 1;
     setTimeout(() => { document.getElementById('damageOverlay').style.opacity = 0; }, 100);
@@ -1315,9 +1400,9 @@ function handleLocalTakeDamage(data) {
         const killerWeapon = data.weapon && WEAPONS[data.weapon] ? WEAPONS[data.weapon].name : '';
         const diedMsg = { type: 'player_died', id: myPeerId, shooterId: data.shooterId, isHeadshot: data.hitType === 'head', victimName: myName };
         broadcastToAll(diedMsg);
-        if (isHost) { updateScoreOnKill(diedMsg); broadcastToAll({ type: 'score_update', teamScores, playerKills }); }
+        if (isHost) { updateScoreOnKill(diedMsg); broadcastToAll({ type: 'score_update', teamScores, playerKills }); if (gameMode === 'duel') hostDuelCheck(); }
         showDeathScreen(killerName, killerWeapon);
-        if (document.pointerLockElement) document.exitPointerLock();
+        if (gameMode !== 'duel' && document.pointerLockElement) document.exitPointerLock();
     }
 }
 function showDeathScreen(killerName, killerWeapon) {
@@ -1356,6 +1441,7 @@ function refillAllAmmo() {
 }
 
 function respawnPlayer() {
+    if (gameMode === 'gungame') applyGunLevel();
     if (gameMode === 'duel') {
         if (isHost) { playerPos.set(-15, 0, -15); yaw = Math.PI / 4; }
         else { playerPos.set(15, 0, 15); yaw = -Math.PI * 3 / 4; }
@@ -1365,7 +1451,7 @@ function respawnPlayer() {
         const rz = (Math.random() - 0.5) * 20 + (myTeam === 'A' ? 25 : -25);
         playerPos.set(rx, getGroundHeight(rx, rz), rz);
         yaw = myTeam === 'A' ? Math.PI : 0;
-    } else if (gameMode === 'ffa') {
+    } else if (gameMode === 'ffa' || gameMode === 'gungame') {
         // 随机安全点，选离敌人最远
         const p = pickRespawnPoint();
         playerPos.set(p.x, getGroundHeight(p.x, p.z), p.z);
@@ -1444,18 +1530,19 @@ function updateRangeChallenge(dt) {
 }
 
 function spawnBoss() {
-    const hp = 1200 + wave * 300;
+    const kind = ['normal', 'tank', 'runner', 'spitter'][(Math.floor(wave / 5) - 1) % 4];
+    const hp = (1200 + wave * 300) * (kind === 'tank' ? 2 : (kind === 'runner' ? 0.55 : 1));
     const model = createHumanModel(0x661111, true);
     model.scale.set(2.1, 2.1, 2.1);
     const angle = Math.random() * Math.PI * 2;
     const x = Math.cos(angle) * 30, z = Math.sin(angle) * 30;
     const y = getGroundHeight(x, z);
     model.position.set(x, y, z); scene.add(model);
-    model.userData = { hp, maxHp: hp, dead: false, respawnAt: 0, meshes: model.userData.meshes, isZombie: true, isBoss: true, speed: 1.9 + wave * 0.04, lastAttack: 0, attackCooldown: 1100, groundY: y, lastGroundCheck: 0, phase2: false, summonTimer: 0 };
+    model.userData = { hp, maxHp: hp, dead: false, respawnAt: 0, meshes: model.userData.meshes, isZombie: true, isBoss: true, kind, speed: (1.9 + wave * 0.04) * (kind === 'runner' ? 2 : (kind === 'tank' ? 0.6 : 1)), lastAttack: 0, attackCooldown: 1100, groundY: y, lastGroundCheck: 0, phase2: false, summonTimer: 0 };
     activeBoss = model;
     bossBarContainer.classList.add('active');
     bossBarFill.style.width = '100%';
-    document.getElementById('bossName').textContent = `变异体 BOSS · 第 ${wave} 波`;
+    document.getElementById('bossName').textContent = `${{ normal: '变异体', tank: '巨型坦克', runner: '疾行狂魔', spitter: '酸液喷吐者' }[kind]} BOSS · 第 ${wave} 波`;
 }
 function updateBossBar() {
     if (!activeBoss) { bossBarContainer.classList.remove('active'); return; }
@@ -1481,13 +1568,14 @@ function updateBoss(dt) {
     }
     const dir = new THREE.Vector3().subVectors(playerPos, b.position); dir.y = 0;
     const dist = dir.length();
-    if (dist > 2.2) {
+    if (ud.kind === 'spitter' && dist < 26 && now - ud.lastAttack > 1800) { ud.lastAttack = now; spawnAcid(b.position, 18 + wave); }
+    if (dist > (ud.kind === 'spitter' ? 12 : 2.2)) {
         dir.normalize();
         b.position.addScaledVector(dir, ud.speed * dt);
         ud.groundY = getGroundHeight(b.position.x, b.position.z, b.position.y + 0.8);
         b.position.y = ud.groundY; resolveWalls(b.position, 0.9, b.position.y);
         b.lookAt(playerPos.x, b.position.y, playerPos.z);
-    } else if (now - ud.lastAttack > ud.attackCooldown) {
+    } else if (ud.kind !== 'spitter' && now - ud.lastAttack > ud.attackCooldown) {
         ud.lastAttack = now;
         if (!isDead) takeDamage(22 + wave * 2);
     }
@@ -1640,9 +1728,9 @@ function startGame(mode) {
     setupMap(currentMapId);
     healthContainer.style.display = 'block';
 
-    const isMulti = (mode === 'ffa' || mode === 'tdm' || mode === 'domination' || mode === 'duel');
+    const isMulti = (mode === 'ffa' || mode === 'tdm' || mode === 'domination' || mode === 'duel' || mode === 'gungame');
     const isTeamMode = (mode === 'tdm' || mode === 'domination');
-    infiniteAmmo = (isMulti || mode === 'zombie');
+    infiniteAmmo = (mode === 'zombie' || mode === 'range');
 
     bossBarContainer.classList.remove('active');
     objectiveUI.classList.remove('active');
@@ -1676,6 +1764,7 @@ function startGame(mode) {
     } else {
         teamSelectionPhase = false; matchStarted = true; isDead = false;
         if (isMulti && !(myPeerId in playerKills)) playerKills[myPeerId] = 0;
+        resetMatchTimer();
         renderer.domElement.requestPointerLock();
         respawnPlayer();
     }
@@ -1686,6 +1775,7 @@ function startActualMatch() {
     teamSelectOverlay.classList.remove('active');
     document.getElementById('deathScreen').classList.remove('active');
     if (!(myPeerId in playerKills)) playerKills[myPeerId] = 0;
+    resetMatchTimer();
     respawnPlayer();
     renderer.domElement.requestPointerLock();
 }
@@ -1742,6 +1832,53 @@ document.getElementById('btnStartMatch').addEventListener('click', () => {
     startActualMatch();
 });
 
+// ================= 比赛流程：计时 / 结算 / 重开 / 武器升级 / 单挑回合 =================
+const GG_LADDER = ['barrett', 'awm', 'lmg', 'ak', 'scar', 'm4', 'shotgun', 's12k', 'dmr', 'svd', 'tommy', 'p90', 'deagle', 'pistol', 'knife'];
+let gunLevel = 0;
+function applyGunLevel() { const id = GG_LADDER[Math.min(gunLevel, GG_LADDER.length - 1)]; loadout[slotForWeaponType(WEAPONS[id].type)] = id; equipWeapon(id); }
+function fmtTime(sec) { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+function resetMatchTimer() { matchOver = false; gunLevel = 0; matchTimeLeft = gameMode === 'gungame' ? 600 : ((gameMode === 'ffa' || gameMode === 'tdm' || gameMode === 'domination') ? 300 : 0); }
+function showBigMessage(t) { centerMessageEl.textContent = t; centerMessageEl.style.opacity = 1; clearTimeout(showBigMessage._t); showBigMessage._t = setTimeout(() => { centerMessageEl.style.opacity = 0; }, 7500); }
+function computeWinnerText() {
+    if (gameMode === 'tdm' || gameMode === 'domination') { if (teamScores.A === teamScores.B) return '时间到 · 平局'; return teamScores.A > teamScores.B ? '时间到 · 蓝队获胜！' : '时间到 · 红队获胜！'; }
+    let best = null, bs = -1, tie = false;
+    for (const id in playerKills) { const sc = playerKills[id]; if (sc > bs) { bs = sc; best = id; tie = false; } else if (sc === bs) tie = true; }
+    if (!best || tie) return '时间到 · 平局'; return '时间到 · ' + (playerNames[best] || '玩家') + ' 获胜！';
+}
+function onMatchEnd(text) { matchOver = true; showBigMessage(text); }
+function hostEndMatch(text) {
+    if (!isHost || matchOver) return;
+    broadcastToAll({ type: 'match_end', text }); onMatchEnd(text);
+    setTimeout(() => { broadcastToAll({ type: 'match_restart' }); restartMatch(); }, 8000);
+}
+function showAllRemotes() { for (const id in remotePlayers) { const m = remotePlayers[id].model; m.visible = true; m.traverse(o => { if (o.isMesh) o.visible = true; }); } }
+function restartMatch() {
+    teamScores = { A: 0, B: 0 }; for (const id in playerKills) playerKills[id] = 0;
+    kills = 0; headshots = 0; killCountEl.textContent = 0; headshotCountEl.textContent = 0;
+    resetMatchTimer(); isDead = false; hideDeathScreen(); playerHP = rogueUpgrades.hpMax; updateHealthUI(); showAllRemotes();
+    respawnPlayer(); updateScoreBoardUI(); if (!pointerLocked) renderer.domElement.requestPointerLock();
+}
+function onMyKill() {
+    if (gameMode === 'gungame') {
+        if (GG_LADDER[gunLevel] === 'knife') { if (isHost) hostEndMatch(myName + ' 率先用匕首击杀，获胜！'); else broadcastToAll({ type: 'gg_win', id: myPeerId }); return; }
+        gunLevel++; applyGunLevel(); refillAllAmmo(); showMessage('升级：' + WEAPONS[GG_LADDER[gunLevel]].name); updateScoreBoardUI(); return;
+    }
+    if (!infiniteAmmo && currentWeaponDef && currentWeaponDef.type !== 'knife') { // 击杀回复子弹
+        currentAmmo = getCurrentMagSize(); currentReserve = Math.min(currentWeaponDef.reserveAmmo, currentReserve + Math.ceil(currentWeaponDef.reserveAmmo * 0.5));
+        syncAmmoToState(); updateWeaponHud();
+    }
+}
+function hostDuelCheck() {
+    for (const id in playerKills) if (playerKills[id] >= 10) { hostEndMatch((playerNames[id] || '玩家') + ' 获胜！'); return; }
+    broadcastToAll({ type: 'round_reset' }); scheduleRoundReset();
+}
+function scheduleRoundReset() {
+    setTimeout(() => {
+        if (matchOver) return;
+        isDead = false; hideDeathScreen(); playerHP = rogueUpgrades.hpMax; updateHealthUI(); showAllRemotes(); respawnPlayer();
+    }, 2500);
+}
+
 // ================= 比分板 =================
 function showScoreBoard() {
     scoreBoardEl.classList.add('active');
@@ -1756,13 +1893,15 @@ function updateScoreBoardUI() {
     if (gameMode === 'tdm') label.textContent = '团队死斗';
     else if (gameMode === 'domination') label.textContent = '团队占点';
     else if (gameMode === 'ffa') label.textContent = '自由混战';
-    else if (gameMode === 'duel') label.textContent = '单挑模式';
+    else if (gameMode === 'duel') label.textContent = '单挑模式 · 先到10分';
+    else if (gameMode === 'gungame') label.textContent = '武器升级 · 我的等级 ' + (gunLevel + 1) + '/' + GG_LADDER.length;
     else label.textContent = '';
+    if (matchTimeLeft > 0) label.textContent += '  ' + fmtTime(matchTimeLeft);
     if (gameMode === 'tdm' || gameMode === 'domination') {
         teamsEl.style.display = 'flex'; ffaEl.style.display = 'none';
         document.getElementById('scoreA').textContent = teamScores.A;
         document.getElementById('scoreB').textContent = teamScores.B;
-    } else if (gameMode === 'ffa' || gameMode === 'duel') {
+    } else if (gameMode === 'ffa' || gameMode === 'duel' || gameMode === 'gungame') {
         teamsEl.style.display = 'none'; ffaEl.style.display = 'flex';
         const entries = Object.keys(playerKills).map(id => ({
             id, name: playerNames[id] || (id === myPeerId ? myName : '玩家'), score: playerKills[id] || 0
@@ -1798,11 +1937,11 @@ function spawnZombie() {
     y = getGroundHeight(x, z); if (y < 0.1) break;
   }
   const roll = Math.random();
-  const type = (wave >= 3 && roll < 0.12) ? 'tank' : (roll < 0.3 ? 'runner' : 'normal');
-  const cfg = type === 'tank' ? { s: 1.3, hp: 3, sp: 0.65, dmg: 1.6, label: '巨兽' } : (type === 'runner' ? { s: 0.95, hp: 0.55, sp: 1.6, dmg: 0.8, label: '疾行者' } : { s: 1, hp: 1, sp: 1, dmg: 1, label: '丧尸' });
+  const type = (wave >= 3 && roll < 0.12) ? 'tank' : (roll < 0.3 ? 'runner' : (wave >= 2 && roll < 0.42 ? 'spitter' : 'normal'));
+  const cfg = type === 'tank' ? { s: 1.3, hp: 3, sp: 0.65, dmg: 1.6, label: '坦克' } : (type === 'runner' ? { s: 0.95, hp: 0.55, sp: 1.6, dmg: 0.8, label: '疾行者' } : (type === 'spitter' ? { s: 1, hp: 0.7, sp: 0.8, dmg: 0, label: '喷吐者', ranged: true } : { s: 1, hp: 1, sp: 1, dmg: 1, label: '丧尸' }));
   const model = createHumanModel(0, true);
   model.scale.setScalar(cfg.s); model.position.set(x, y, z); scene.add(model);
-  model.userData = { hp: (100 + (wave - 1) * 50) * cfg.hp, dead: false, respawnAt: 0, hitUntil: 0, meshes: model.userData.meshes, isZombie: true, label: cfg.label, scale: cfg.s, dmgMult: cfg.dmg, speed: (1.5 + Math.random()) * (1 + wave * 0.05) * cfg.sp, lastAttack: 0, attackCooldown: 1000, groundY: y, lastGroundCheck: 0 };
+  model.userData = { hp: (100 + (wave - 1) * 50) * cfg.hp, dead: false, respawnAt: 0, hitUntil: 0, meshes: model.userData.meshes, isZombie: true, label: cfg.label, ranged: !!cfg.ranged, scale: cfg.s, dmgMult: cfg.dmg, speed: (1.5 + Math.random()) * (1 + wave * 0.05) * cfg.sp, lastAttack: 0, attackCooldown: 1000, groundY: y, lastGroundCheck: 0 };
   activeZombies.push(model); updateWaveUI();
 }
 function updateZombies(dt) {
@@ -1839,17 +1978,19 @@ function updateZombies(dt) {
     const dir = new THREE.Vector3().subVectors(playerPos, z.position); dir.y = 0;
     const dist = dir.length();
     ud.phase = (ud.phase || i) + dt * ud.speed * 4;
-    if (dist > 1.3) {
+    if (ud.ranged && dist < 24 && dist > 3) { if (now - ud.lastAttack > 2200) { ud.lastAttack = now; ud.atkT = 0.3; spawnAcid(z.position, 8 + wave * 1.5); } if (dist < 14) z.lookAt(playerPos.x, z.position.y, playerPos.z); }
+    if (dist > (ud.ranged ? 14 : 1.3)) {
       dir.normalize();
       const moveDir = new THREE.Vector3(dir.x + Math.sin(now * 0.004 + i) * 0.3, 0, dir.z + Math.cos(now * 0.003 + i) * 0.15).normalize();
       const ox = z.position.x, oz = z.position.z;
       z.position.addScaledVector(moveDir, ud.speed * dt);
-      z.position.y = getGroundHeight(z.position.x, z.position.z, z.position.y + 0.6);
+      if ((ud.gc = ((ud.gc || 0) + 1) % 3) === 0) ud.gy = getGroundHeight(z.position.x, z.position.z, z.position.y + 0.6);
+      if (ud.gy !== undefined) z.position.y = ud.gy;
       resolveWalls(z.position, 0.4 * (ud.scale || 1), z.position.y);
       ud.stuck = Math.hypot(z.position.x - ox, z.position.z - oz) < ud.speed * dt * 0.3 ? (ud.stuck || 0) + dt : 0;
       if (ud.stuck > 3.5) { unstickZombie(z); ud.stuck = 0; }
       z.lookAt(playerPos.x, z.position.y, playerPos.z);
-    } else if (now - ud.lastAttack > ud.attackCooldown) {
+    } else if (!ud.ranged && now - ud.lastAttack > ud.attackCooldown) {
       ud.lastAttack = now; ud.atkT = 0.3;
       if (gameMode === 'zombie' && !isDead) takeDamage((10 + wave * 2) * (ud.dmgMult || 1));
     }
@@ -2133,72 +2274,86 @@ function buildLMG() {
   return setupGun(gun, new THREE.Vector3(currentWeaponDef.adsOffset.x, currentWeaponDef.adsOffset.y, currentWeaponDef.adsOffset.z), false);
 }
 function buildKnife() {
-  const root = new THREE.Group();
-  const knifeMesh = new THREE.Group();
-  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, 0.13), MAT.polymer);
-  handle.position.set(0, 0, 0.05); knifeMesh.add(handle);
-  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.015, 0.02), MAT.metalDark);
-  guard.position.set(0, 0, -0.02); knifeMesh.add(guard);
-  const bladeBody = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.008, 0.16), MAT.blade);
-  bladeBody.position.set(0, 0, -0.11); knifeMesh.add(bladeBody);
-  const tip = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.008, 0.06), MAT.blade);
-  tip.position.set(0, 0, -0.21); tip.rotation.x = -0.3; knifeMesh.add(tip);
-  knifeMesh.position.z = 0.05;
-  root.add(knifeMesh);
+  const root = new THREE.Group(), knifeMesh = new THREE.Group();
+  const mk = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); knifeMesh.add(m); return m; };
+  mk(new THREE.BoxGeometry(0.03, 0.04, 0.13), MAT.polymer, 0, 0, 0.05);            // 刀柄：长方形
+  mk(new THREE.BoxGeometry(0.034, 0.044, 0.015), MAT.metalDark, 0, 0, 0.12);        // 刀柄尾
+  mk(new THREE.BoxGeometry(0.07, 0.014, 0.02), MAT.metalDark, 0, 0, -0.02);         // 护手 =====
+  const L = 0.2, H = 0.045, sh = new THREE.Shape();                                  // 刀刃：直角梯形（刀背直、刀尖斜切）
+  sh.moveTo(0, 0); sh.lineTo(L - 0.05, 0); sh.lineTo(L, H); sh.lineTo(0, H); sh.closePath();
+  const bg = new THREE.ExtrudeGeometry(sh, { depth: 0.006, bevelEnabled: false }); bg.rotateY(Math.PI / 2); bg.translate(-0.003, -H / 2, 0);
+  mk(bg, MAT.blade, 0, 0, -0.03);
+  mk(new THREE.BoxGeometry(0.004, 0.004, L - 0.05), MAT.bladeEdge, 0, -H / 2, -0.03 - (L - 0.05) / 2); // 刃口高光
+  knifeMesh.position.z = 0.05; root.add(knifeMesh);
   root.userData.gripPos = new THREE.Vector3(0, -0.01, 0.05);
   root.userData.handguardPos = new THREE.Vector3(0, -0.03, -0.03);
   root.userData.basePosition = new THREE.Vector3(currentWeaponDef.viewOffset.x, currentWeaponDef.viewOffset.y, currentWeaponDef.viewOffset.z);
   root.userData.adsPosition = root.userData.basePosition;
   root.userData.hasScope = false; root.userData.recoil = 0;
   root.position.copy(root.userData.basePosition);
-  const rh = buildArmSide(false); rh.position.copy(root.userData.gripPos); root.add(rh);
-  root.userData.knifeMesh = knifeMesh;
+  const rh = buildArmSide(false); rh.position.copy(root.userData.gripPos); rh.scale.set(1, 1, 1.4); root.add(rh); // 手臂更长，伸向屏幕中间
+  root.userData.knifeMesh = knifeMesh; root.userData.rh = rh;
   return root;
 }
 
 function buildSpec(def) {
+  if (!MAT.green) { MAT.green = new THREE.MeshStandardMaterial({ color: 0x3f4a2e, roughness: 0.7, metalness: 0.3 }); MAT.sand = new THREE.MeshStandardMaterial({ color: 0x8a7a55, roughness: 0.7, metalness: 0.2 }); }
   const s = def.model, g = new THREE.Group(), M = k => MAT[k] || MAT.metalMid;
   const B = (w, h, d) => new THREE.BoxGeometry(w, h, d), C = (r, l, n = 10) => new THREE.CylinderGeometry(r, r, l, n);
-  const add = (geo, mat, x, y, z, rx = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.x = rx; g.add(m); return m; };
-  let flashZ, scope = false;
+  const add = (geo, mat, x, y, z, rx = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.x = rx; m.rotation.z = rz; g.add(m); return m; };
+  let flashZ, scope = false, sy = 0.09;
   if (s.pistol) {
-    add(B(0.04, 0.04, 0.2), MAT.metalMid, 0, 0.02, -0.05); add(B(0.038, 0.03, 0.18), MAT.polymer, 0, -0.01, -0.04);
+    add(B(0.04, 0.04, 0.2), M(s.col || 'metalMid'), 0, 0.02, -0.05); add(B(0.038, 0.03, 0.18), MAT.polymer, 0, -0.01, -0.04);
+    add(B(0.008, 0.012, 0.008), MAT.metalLight, 0, 0.046, -0.14); add(B(0.026, 0.012, 0.008), MAT.metalLight, 0, 0.046, 0.04);
     if (s.revolver) { add(C(0.03, 0.05, 8), MAT.metalLight, 0, 0.02, -0.03, Math.PI / 2); add(C(0.012, 0.14, 10), MAT.metalDark, 0, 0.03, -0.16, Math.PI / 2); add(B(0.01, 0.03, 0.02), MAT.metalDark, 0, 0.05, 0.05); flashZ = -0.24; }
-    else if (s.silencer) { add(C(0.016, 0.16, 10), MAT.metalDark, 0, 0.02, -0.22, Math.PI / 2); flashZ = -0.32; }
+    else if (s.sil) { add(C(0.016, 0.16, 10), MAT.metalDark, 0, 0.02, -0.22, Math.PI / 2); flashZ = -0.32; }
     else { add(C(0.01, 0.04, 10), MAT.metalDark, 0, 0.02, -0.16, Math.PI / 2); flashZ = -0.2; }
+    sy = 0.058;
+    if (s.dot) { const sg = createRedDotSight(); sg.scale.setScalar(0.55); sg.position.set(0, 0.04, -0.03); g.add(sg); sy = 0.04 + 0.076 * 0.55; }
     g.userData.gripPos = new THREE.Vector3(0, -0.09, 0.05);
-    add(B(0.038, 0.13, 0.055), MAT.polymer, 0, -0.09, 0.05, 0.28);
-    const mag = add(B(0.04, 0.015, 0.058), MAT.metalDark, 0, -0.16, 0.06, 0.28); g.userData.magazine = mag;
+    add(B(0.038, 0.13, 0.055), M(s.gm || 'polymer'), 0, -0.09, 0.05, 0.28);
+    g.userData.magazine = add(B(0.04, 0.015, 0.058), MAT.metalDark, 0, -0.16, 0.06, 0.28);
     g.userData.handguardPos = new THREE.Vector3(-0.02, -0.04, -0.05);
   } else {
-    const rec = s.rec || 0.24, bar = s.bar || 0.35;
-    add(B(0.06, 0.065, rec), M(s.col), 0, 0.01, 0); add(B(0.062, 0.035, rec * 0.9), MAT.metalDark, 0, 0.04, 0);
-    if (s.hg) add(B(0.06, 0.06, s.hgl), M(s.hg), 0, 0.015, -rec / 2 - s.hgl / 2 + 0.02);
-    add(C(0.012, bar, 12), MAT.metalDark, 0, 0.02, -rec / 2 - bar / 2 + 0.02, Math.PI / 2);
+    const rec = s.rec || 0.24, bar = s.bar || 0.35, rh = s.rh || 0.065, bz0 = -rec / 2, hgl = s.hgl || 0.2, dh = rh - 0.065;
+    add(B(0.06, rh, rec), M(s.col), 0, 0.01 + dh / 2, 0); add(B(0.062, 0.035, rec * 0.9), MAT.metalDark, 0, 0.04 + dh, 0);
+    if (s.round) add(C(0.032, hgl, 10), M(s.hg || 'polymer'), 0, 0.02, bz0 - hgl / 2 + 0.02, Math.PI / 2);
+    else if (s.hg) add(B(0.06, 0.06, hgl), M(s.hg), 0, 0.015, bz0 - hgl / 2 + 0.02);
+    add(C(0.012, bar, 12), MAT.metalDark, 0, 0.02, bz0 - bar / 2 + 0.02, Math.PI / 2);
+    if (s.gas) add(C(0.008, bar * 0.6, 8), MAT.metalLight, 0, 0.052, bz0 - bar * 0.3, Math.PI / 2);
+    if (s.fins) for (let i = 0; i < 5; i++) add(C(0.02, 0.012, 10), MAT.metalMid, 0, 0.02, bz0 - 0.06 - i * 0.05, Math.PI / 2);
+    if (s.vgrip) add(B(0.03, 0.1, 0.035), MAT.polymer, 0, -0.07, bz0 - hgl * 0.7);
+    let tip = bz0 - bar + 0.02;
+    if (s.brake) { add(B(0.045, 0.045, 0.07), MAT.metalDark, 0, 0.02, tip - 0.02); tip -= 0.06; }
+    if (s.sil) { add(C(0.024, 0.2, 12), MAT.metalDark, 0, 0.02, tip - 0.08, Math.PI / 2); tip -= 0.17; }
+    if (s.bipod) [-1, 1].forEach(sd => { add(B(0.008, 0.11, 0.008), MAT.metalDark, sd * 0.03, -0.055, bz0 - bar * 0.55, 0, sd * 0.35); });
+    if (s.handle) { add(B(0.014, 0.014, 0.14), MAT.metalDark, 0, 0.105, -0.02); add(B(0.014, 0.04, 0.014), MAT.metalDark, 0, 0.083, -0.08); add(B(0.014, 0.04, 0.014), MAT.metalDark, 0, 0.083, 0.04); }
     g.userData.gripPos = new THREE.Vector3(0, -0.08, 0.08);
-    add(B(0.036, 0.12, 0.055), (s.stock === 'wood' ? MAT.woodDark : MAT.polymer), 0, -0.08, 0.08, 0.32);
+    add(B(0.036, 0.12, 0.055), M(s.gm || (s.stock === 'wood' ? 'woodDark' : 'polymer')), 0, -0.08, 0.08, 0.32);
     const mag = new THREE.Group(), mk = s.mag || 'straight';
     const mm = (geo, x, y, z, rx, rz) => { const o = new THREE.Mesh(geo, MAT.metalDark); o.rotation.z = rz || 0; mag.add(o); mag.position.set(x, y, z); mag.rotation.x = rx || 0; };
     if (mk === 'curved') mm(B(0.038, 0.17, 0.065), 0, -0.03, -0.06, 0.45);
     else if (mk === 'drum') mm(C(0.075, 0.07, 18), 0, -0.08, -0.04, 0, Math.PI / 2);
     else if (mk === 'box') mm(B(0.1, 0.14, 0.16), 0, -0.1, 0, 0);
-    else if (mk === 'flat') mm(B(0.05, 0.03, 0.26), 0, 0.075, -0.02, 0);
+    else if (mk === 'flat') mm(B(0.05, 0.03, 0.26), 0, 0.075 + dh, -0.02, 0);
     else mm(B(0.038, 0.15, 0.065), 0, -0.02, -0.05, 0.25);
     g.add(mag); g.userData.magazine = mag;
-    const sl = s.sl || 0.2;
-    if (s.stock === 'fixed' || s.stock === 'wood') add(B(0.048, 0.07, sl), s.stock === 'wood' ? MAT.woodDark : MAT.polymer, 0, -0.01, rec / 2 + sl / 2 - 0.01);
+    const sl = s.sl || 0.2, stm = s.stock === 'wood' ? MAT.woodDark : M(s.sm || 'polymer');
+    if (s.stock === 'fixed' || s.stock === 'wood') add(B(0.048, 0.07, sl), stm, 0, -0.01, rec / 2 + sl / 2 - 0.01);
     else if (s.stock === 'fold') add(B(0.03, 0.04, 0.2), MAT.metalDark, 0, 0, rec / 2 + 0.1);
-    if (s.sight === 'reddot') { const sg = createRedDotSight(); sg.position.set(0, 0.05, -0.05); g.add(sg); }
-    else if (s.sight === 'iron') { add(B(0.008, 0.03, 0.008), MAT.metalLight, 0, 0.07, -rec / 2 - bar + 0.1); add(B(0.03, 0.02, 0.008), MAT.metalLight, 0, 0.065, rec / 2 - 0.05); }
+    if (s.thumb) add(B(0.048, 0.03, sl * 0.8), stm, 0, -0.06, rec / 2 + sl * 0.5);
+    if (s.sight === 'reddot') { const sg = createRedDotSight(); sg.position.set(0, 0.05 + dh, -0.05); g.add(sg); sy = 0.126 + dh; }
     else if (s.sight === 'scope') {
-      scope = true; add(C(0.025, 0.3, 12), MAT.metalDark, 0, 0.085, -0.02, Math.PI / 2);
+      scope = true; sy = 0.085; add(C(0.025, 0.3, 12), MAT.metalDark, 0, 0.085, -0.02, Math.PI / 2);
       add(C(0.03, 0.03, 12), MAT.metalMid, 0, 0.085, -0.1, Math.PI / 2); add(C(0.03, 0.03, 12), MAT.metalMid, 0, 0.085, 0.07, Math.PI / 2);
+    } else { // 机械瞄具：准星/照门顶端 = 瞄准线高度
+      add(B(0.008, 0.03, 0.008), MAT.metalLight, 0, 0.07, bz0 - bar + 0.1); add(B(0.03, 0.03, 0.008), MAT.metalLight, 0, 0.075, rec / 2 - 0.05); sy = 0.09;
     }
-    flashZ = -rec / 2 - bar - 0.02;
-    g.userData.handguardPos = new THREE.Vector3(-0.02, -0.02, -rec / 2 - 0.12);
+    flashZ = tip - 0.04;
+    g.userData.handguardPos = new THREE.Vector3(-0.02, -0.02, bz0 - 0.12);
   }
   const flash = buildMuzzleFlash(flashZ); g.add(flash); g.userData.muzzleFlash = flash;
-  return setupGun(g, new THREE.Vector3(def.adsOffset.x, def.adsOffset.y, def.adsOffset.z), scope);
+  return setupGun(g, new THREE.Vector3(0, -sy, def.adsOffset.z), scope); // 瞄准线与相机对齐
 }
 const weaponRoot = new THREE.Group(); camera.add(weaponRoot);
 const ammoState = {};
@@ -2242,6 +2397,7 @@ function doEquip(id) {
   updateWeaponMenuHighlight();
 }
 function equipSlot(slot) {
+    if (gameMode === 'gungame') return;
     if (slot === 'primary') equipWeapon(loadout.primary);
     else if (slot === 'pistol') equipWeapon(loadout.pistol);
     else if (slot === 'melee') equipWeapon(loadout.melee);
@@ -2361,15 +2517,14 @@ function applyDamage(target, damage, hitType) {
 }
 
 // ================= 近战 =================
-function tryKnifeAttack() {
-  if (isDead || choosingUpgrade || equipLock > 0) return;
-  const dur = knifeAttackState === 3 ? 0.34 : 0.28;
-  if (knifeAttackState !== 0 && knifeAttackTimer < dur * 0.6) return;
-  if (inspecting) inspecting = false;
-  playKnifeSwing();
+function tryKnifeAttack(heavy) {
+  if (isDead || choosingUpgrade || equipLock > 0 || matchOver) return;
+  if (knifeAttackState !== 0 && knifeAttackTimer < knifeAttackDur(knifeAttackState) * 0.6) return;
+  inspecting = false; playKnifeSwing();
   const now = performance.now();
-  knifeCombo = (now - lastKnifeAttackTime < 800) ? (knifeCombo % 3) + 1 : 1;
-  knifeAttackState = knifeCombo; knifeAttackTimer = 0; knifeDidHit = false; lastKnifeAttackTime = now;
+  if (heavy) { knifeAttackState = 4; knifeHeavy = true; knifeCombo = 0; }
+  else { knifeHeavy = false; knifeCombo = (now - lastKnifeAttackTime < 800) ? (knifeCombo % 3) + 1 : 1; knifeAttackState = knifeCombo; }
+  knifeAttackTimer = 0; knifeDidHit = false; lastKnifeAttackTime = now;
 }
 function executeKnifeHit() {
     const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
@@ -2379,7 +2534,7 @@ function executeKnifeHit() {
     if (activeBoss) activeBoss.traverse(o => { if(o.isMesh) hitTargets.push(o); });
     const hits = ray.intersectObjects(hitTargets, true);
     for (const hit of hits) {
-        if (hit.object.visible) { handleBulletHit(hit, currentWeaponDef); break; }
+        if (hit.object.visible) { handleBulletHit(hit, knifeHeavy ? Object.assign({}, currentWeaponDef, { damage: 150 }) : currentWeaponDef); break; }
     }
 }
 
@@ -2390,7 +2545,7 @@ let pointerLocked = false, mouseDown = false;
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Space') e.preventDefault();
-  if (e.code === 'KeyB' && !isWeaponMenuOpen && gameMode !== 'none' && matchStarted && !isDead && !choosingUpgrade) { toggleWeaponMenu(true); return; }
+  if (e.code === 'KeyB' && !isWeaponMenuOpen && gameMode !== 'none' && gameMode !== 'gungame' && matchStarted && !isDead && !choosingUpgrade) { toggleWeaponMenu(true); return; }
   if (e.code === 'Escape' && isWeaponMenuOpen) { toggleWeaponMenu(false); return; }
   if (e.code === 'KeyT' && gameMode === 'range' && !rangeChallenge.active) { ensureAudio(); startRangeChallenge(); return; }
   if (!pointerLocked) return;
@@ -2400,8 +2555,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Digit1') equipSlot('primary');
   if (e.code === 'Digit2') equipSlot('pistol');
   if (e.code === 'Digit3') equipSlot('melee');
-  if (e.code === 'KeyC') stance = stance === 1 ? 0 : 1;
-  if (e.code === 'KeyZ') stance = stance === 2 ? 0 : 2;
+  if (e.code === 'KeyC') { const ns = stance === 1 ? 0 : 1; if (ns !== 0 || canStand()) stance = ns; }
+  if (e.code === 'KeyZ') { const ns = stance === 2 ? 0 : 2; if (ns !== 0 || canStand()) stance = ns; }
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
@@ -2451,7 +2606,7 @@ document.addEventListener('mousedown', (e) => {
   }
   if (e.button === 2) {
       e.preventDefault(); if (inspecting) inspecting = false;
-      if (currentWeaponDef.type !== 'knife') isADS = true;
+      if (currentWeaponDef.type !== 'knife') isADS = true; else tryKnifeAttack(true);
   }
 });
 document.addEventListener('mouseup', (e) => {
@@ -2462,7 +2617,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 function tryShoot() {
   const def = currentWeaponDef;
-  if (!def || !pointerLocked || reloading || equipLock > 0 || isBoltAction || isDead || choosingUpgrade) return;
+  if (!def || !pointerLocked || reloading || equipLock > 0 || isBoltAction || isDead || choosingUpgrade || matchOver) return;
   if (inspecting) inspecting = false;
   const currentFireRate = def.fireRate * rogueUpgrades.fireRateMult;
   if (performance.now() / 1000 - lastShotTime < 60 / currentFireRate) return;
@@ -2487,7 +2642,8 @@ function tryShoot() {
   const startPos = camera.position.clone().addScaledVector(camDir, 0.5);
   currentWeaponMesh.userData.muzzleNode.getWorldPosition(_muzzlePos);
 
-  const spread = def.spread * (1 - adsAmount * 0.75) * (stance === 0 ? 1 : 0.6);
+  let spread = def.spread * (1 - adsAmount * 0.75) * (stance === 0 ? 1 : 0.6);
+  if (def.type === 'sniper') spread = (def.id === 'barrett' ? 0.09 : 0.065) * (1 - adsAmount) + def.spread * adsAmount; // 狙击枪腰射大散布
   const pellets = def.pellets || 1;
 
   for (let i = 0; i < pellets; i++) {
@@ -2509,7 +2665,7 @@ function tryShoot() {
     spawnVisualBullet(_muzzlePos, _targetPos, def);
   }
 
-  if (gameMode === 'ffa' || gameMode === 'tdm' || gameMode === 'domination' || gameMode === 'duel') {
+  if (gameMode === 'ffa' || gameMode === 'tdm' || gameMode === 'domination' || gameMode === 'duel' || gameMode === 'gungame') {
       broadcastToAll({ type: 'shoot', id: myPeerId, sx: _muzzlePos.x, sy: _muzzlePos.y, sz: _muzzlePos.z, ex: _targetPos.x, ey: _targetPos.y, ez: _targetPos.z });
   }
 }
@@ -2532,6 +2688,13 @@ function applyRecoil(def) {
 
 // ================= 玩家更新 =================
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function canStand() {
+  for (const { box } of colliders) {
+    if (playerPos.x + PLAYER_RADIUS > box.min.x && playerPos.x - PLAYER_RADIUS < box.max.x && playerPos.z + PLAYER_RADIUS > box.min.z && playerPos.z - PLAYER_RADIUS < box.max.z &&
+        box.min.y > playerPos.y + 0.5 && box.min.y < playerPos.y + PLAYER_HEIGHT) return false;
+  }
+  return true;
+}
 function updatePlayer(dt) {
   const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
   const move = new THREE.Vector3();
@@ -2539,7 +2702,7 @@ function updatePlayer(dt) {
   if (keys['KeyD']) move.add(right); if (keys['KeyA']) move.sub(right);
   if (move.lengthSq() > 0) move.normalize();
 
-  const isMulti = (gameMode === 'ffa' || gameMode === 'tdm' || gameMode === 'domination' || gameMode === 'duel');
+  const isMulti = (gameMode === 'ffa' || gameMode === 'tdm' || gameMode === 'domination' || gameMode === 'duel' || gameMode === 'gungame');
   let currentBaseSpeed = stance === 1 ? SPEED_CROUCH : (stance === 2 ? SPEED_PRONE : SPEED_STAND);
   const sprinting = keys['ShiftLeft'] && !isADS && !mouseDown && move.lengthSq() > 0 && stance === 0;
   isSprinting = sprinting;
@@ -2567,6 +2730,12 @@ function updatePlayer(dt) {
   }
 
   const prevY = playerPos.y; playerPos.y += playerVel.y * dt;
+  if (playerVel.y > 0) { // 跳跃时检测头顶障碍
+    for (const { box } of colliders) {
+      if (playerPos.x + PLAYER_RADIUS > box.min.x && playerPos.x - PLAYER_RADIUS < box.max.x && playerPos.z + PLAYER_RADIUS > box.min.z && playerPos.z - PLAYER_RADIUS < box.max.z &&
+          prevY + PLAYER_HEIGHT <= box.min.y + 0.01 && playerPos.y + PLAYER_HEIGHT > box.min.y) { playerPos.y = box.min.y - PLAYER_HEIGHT; playerVel.y = 0; }
+    }
+  }
   let grounded = false;
   if (playerVel.y <= 0) {
     for (const { box } of colliders) {
@@ -2604,44 +2773,80 @@ function updatePlayer(dt) {
 // ================= 匕首 / 武器动画 =================
 const easeOutBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
 function kf(t, k) { for (let i = 1; i < k.length; i++) { if (t <= k[i][0]) { const a = k[i - 1], b = k[i]; return a[1] + (b[1] - a[1]) * easeInOutCubic((t - a[0]) / (b[0] - a[0])); } } return k[k.length - 1][1]; }
-let knifeCombo = 0, knifeFlip = 0;
+let knifeCombo = 0, knifeFlip = 0, knifeReverse = 0, knifeHeavy = false, knifeSpinAcc = 0, knifeInspK = 0, knifeTrailOn = false;
+function knifeAttackDur(st) { return st === 4 ? 0.95 : (st === 3 ? 0.34 : 0.28); }
 let knifePosOffset = new THREE.Vector3();
 let knifeRotOffset = new THREE.Euler();
 
 function updateKnifeAnimation(dt) {
-    knifePosOffset.set(0, 0, 0); knifeRotOffset.set(0, 0, 0); knifeFlip = 0;
-    if (inspecting) {
-        inspectTimer += dt;
-        const t = inspectTimer / INSPECT_DURATION;
-        if (t >= 1) inspecting = false;
-        else {
-            knifePosOffset.y += kf(t, [[0, 0], [0.25, 0.05], [0.6, 0.08], [1, 0]]);
-            knifePosOffset.x -= kf(t, [[0, 0], [0.3, 0.1], [1, 0]]); knifePosOffset.z -= kf(t, [[0, 0], [0.3, 0.08], [1, 0]]);
-            knifeRotOffset.z = kf(t, [[0, 0], [0.3, -0.9], [0.65, -0.9], [1, 0]]); knifeRotOffset.y = kf(t, [[0, 0], [0.3, 0.5], [0.65, 0.2], [1, 0]]);
-            knifeFlip = kf(t, [[0, 0], [0.3, 0], [0.8, Math.PI * 4], [1, Math.PI * 4]]); // 指尖翻转两圈
-        }
+    knifePosOffset.set(0, 0, 0); knifeRotOffset.set(0, 0, 0); knifeReverse = 0; knifeTrailOn = false;
+    knifeInspK += ((inspecting ? 1 : 0) - knifeInspK) * Math.min(1, dt * 8);
+    if (inspecting) { inspectTimer += dt; knifeSpinAcc += dt * 3.4; } // 以刀的几何中心为握点横向旋转，直到被打断
+    else if (knifeInspK > 0.002 || Math.abs(knifeSpinAcc) > 0.001) {
+        const tgt = Math.round(knifeSpinAcc / (Math.PI * 2)) * Math.PI * 2; knifeSpinAcc += (tgt - knifeSpinAcc) * Math.min(1, dt * 9);
+        if (knifeInspK <= 0.002 && Math.abs(tgt - knifeSpinAcc) < 0.01) knifeSpinAcc = 0;
     }
+    const ik = easeInOutCubic(Math.min(1, knifeInspK));
+    knifePosOffset.set(-0.09 * ik, 0.06 * ik, -0.02 * ik); knifeRotOffset.x = 0.35 * ik;
     if (knifeAttackState !== 0) {
         knifeAttackTimer += dt;
-        const dur = knifeAttackState === 3 ? 0.34 : 0.28;
-        if (!knifeDidHit && knifeAttackTimer > dur * 0.42) { executeKnifeHit(); knifeDidHit = true; }
-        if (knifeAttackTimer >= dur) { knifeAttackState = 0; knifeAttackTimer = 0; }
+        const st = knifeAttackState, dur = knifeAttackDur(st);
+        if (!knifeDidHit && knifeAttackTimer > dur * (st === 4 ? 0.5 : 0.42)) { executeKnifeHit(); knifeDidHit = true; }
+        if (knifeAttackTimer >= dur) { knifeAttackState = 0; knifeAttackTimer = 0; knifeHeavy = false; }
         else {
-            const t = knifeAttackTimer / dur, s = knifeAttackState === 2 ? -1 : 1;
-            if (knifeAttackState === 3) { // 突刺
+            const t = knifeAttackTimer / dur; knifeTrailOn = (st === 1 || st === 2) && t > 0.15 && t < 0.7;
+            if (st === 4) { // 重击：反手握刀，上提后猛地下扎并停住，然后收回
+                knifePosOffset.y += kf(t, [[0, 0], [0.3, 0.16], [0.42, 0.16], [0.5, -0.1], [0.85, -0.1], [1, 0]]);
+                knifePosOffset.z += kf(t, [[0, 0], [0.3, 0.04], [0.42, 0.04], [0.5, -0.2], [0.85, -0.2], [1, 0]]);
+                knifeRotOffset.x += kf(t, [[0, 0], [0.3, 0.4], [0.5, -0.25], [0.85, -0.25], [1, 0]]);
+                knifeReverse = kf(t, [[0, 0], [0.25, -1.57], [0.85, -1.57], [1, 0]]);
+            } else if (st === 3) { // 前刺
                 knifePosOffset.z += kf(t, [[0, 0], [0.3, 0.1], [0.55, -0.42], [1, 0]]); knifePosOffset.y += kf(t, [[0, 0], [0.3, 0.03], [0.55, 0.02], [1, 0]]);
-                knifeRotOffset.x = kf(t, [[0, 0], [0.3, 0.25], [0.55, -0.2], [1, 0]]);
-            } else { // 左右对角斩
-                knifePosOffset.x += s * kf(t, [[0, 0], [0.28, 0.14], [0.55, -0.22], [1, 0]]); knifePosOffset.z += kf(t, [[0, 0], [0.28, 0.05], [0.55, -0.12], [1, 0]]);
-                knifeRotOffset.z = s * kf(t, [[0, 0], [0.28, 0.7], [0.55, -1.1], [1, 0]]); knifeRotOffset.y = s * kf(t, [[0, 0], [0.28, -0.5], [0.55, 0.9], [1, 0]]);
-                knifeRotOffset.x = kf(t, [[0, 0], [0.28, 0.25], [0.55, -0.3], [1, 0]]);
+                knifeRotOffset.x += kf(t, [[0, 0], [0.3, 0.25], [0.55, -0.2], [1, 0]]);
+            } else { // 1: 右上→左下  2: 左上→右下
+                const sg = st === 2 ? -1 : 1;
+                knifePosOffset.x += sg * kf(t, [[0, 0], [0.28, 0.16], [0.6, -0.2], [1, 0]]);
+                knifePosOffset.y += kf(t, [[0, 0], [0.28, 0.12], [0.6, -0.12], [1, 0]]);
+                knifePosOffset.z += kf(t, [[0, 0], [0.28, 0.05], [0.6, -0.12], [1, 0]]);
+                knifeRotOffset.z = sg * kf(t, [[0, 0], [0.28, 0.8], [0.6, -0.9], [1, 0]]);
+                knifeRotOffset.y = sg * kf(t, [[0, 0], [0.28, -0.5], [0.6, 0.8], [1, 0]]);
+                knifeRotOffset.x += kf(t, [[0, 0], [0.28, 0.2], [0.6, -0.2], [1, 0]]);
             }
         }
     }
 }
+const knifeTrail = { pts: [], mesh: null };
+const _ta = new THREE.Vector3(), _tb = new THREE.Vector3();
+function updateKnifeTrail(dt, km) { // 刀刃划过的空气拖尾
+    const T = knifeTrail, MAXP = 16;
+    if (!T.mesh) {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXP * 6), 3)); geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAXP * 6), 3));
+        const idx = []; for (let i = 0; i < MAXP - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } geo.setIndex(idx);
+        T.mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        T.mesh.frustumCulled = false;
+    }
+    if (!T.mesh.parent) scene.add(T.mesh);
+    if (knifeTrailOn && km) {
+        camera.updateMatrixWorld(true);
+        _ta.set(0, 0.0225, -0.23); _tb.set(0, -0.0225, -0.08); km.localToWorld(_ta); km.localToWorld(_tb);
+        T.pts.unshift({ a: _ta.clone(), b: _tb.clone(), age: 0 }); if (T.pts.length > MAXP) T.pts.pop();
+    }
+    for (const p of T.pts) p.age += dt;
+    while (T.pts.length && T.pts[T.pts.length - 1].age > 0.18) T.pts.pop();
+    const n = T.pts.length, pos = T.mesh.geometry.attributes.position, col = T.mesh.geometry.attributes.color;
+    if (n < 2) { T.mesh.geometry.setDrawRange(0, 0); return; }
+    for (let i = 0; i < MAXP; i++) {
+        const p = T.pts[Math.min(i, n - 1)], f = i < n ? Math.max(0, 1 - p.age / 0.18) * 0.9 : 0;
+        pos.setXYZ(i * 2, p.a.x, p.a.y, p.a.z); pos.setXYZ(i * 2 + 1, p.b.x, p.b.y, p.b.z);
+        col.setXYZ(i * 2, f, f, f); col.setXYZ(i * 2 + 1, f * 0.4, f * 0.4, f * 0.5);
+    }
+    pos.needsUpdate = true; col.needsUpdate = true; T.mesh.geometry.setDrawRange(0, (n - 1) * 6);
+}
 
 function updateWeaponMesh(dt) {
   if (!currentWeaponMesh) return;
+  if (currentWeaponDef.type !== 'knife' && knifeTrail.pts.length) { knifeTrailOn = false; updateKnifeTrail(dt, null); }
   const gun = currentWeaponMesh;
   const adsE = adsAmount * adsAmount * (3 - 2 * adsAmount);
   _tempBasePos.copy(gun.userData.basePosition).lerp(gun.userData.adsPosition, adsE);
@@ -2711,7 +2916,8 @@ function updateWeaponMesh(dt) {
   if (switchAnim > 0) {
     switchAnim = Math.max(0, switchAnim - dt * 2.4);
     const t = 1 - switchAnim, r = 1 - easeOutBack(Math.min(1, t * 1.15));
-    _tempGunPos.y -= r * 0.32; _tempGunPos.x += r * 0.14; rotX += r * 0.8; rotZ -= r * 0.5; rotY += r * 0.45;
+    const kmul = currentWeaponDef.type === 'knife' ? 0.4 : 1;
+    _tempGunPos.y -= r * 0.32 * kmul; _tempGunPos.x += r * 0.14 * kmul; rotX += r * 0.8 * kmul; rotZ -= r * 0.5 * kmul; rotY += r * 0.45 * kmul;
     if (lH && lb && t > 0.55) lH.position.z += kf((t - 0.55) / 0.45, [[0, 0], [0.4, 0.08], [1, 0]]); // 拔枪后拉一下枪机
   }
   if (equipLock > 0) equipLock = Math.max(0, equipLock - dt);
@@ -2736,16 +2942,21 @@ function updateWeaponMesh(dt) {
 
   const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
   const wallRay = new THREE.Raycaster(camera.position, camDir, 0, 1.2);
-  const wallHits = wallRay.intersectObjects(colliders.map(c=>c.mesh));
+  const wallHits = wallRay.intersectObjects(_terrain || (getGroundHeight(0, 0), _terrain));
   if (wallHits.length > 0 && wallHits[0].distance < 1.0) _tempGunPos.z += (1.0 - wallHits[0].distance) * 1.5;
 
   if (currentWeaponDef.type === 'knife') {
       updateKnifeAnimation(dt);
       _tempGunPos.add(knifePosOffset);
-      gun.userData.knifeMesh.rotation.set(0, 0, knifeFlip);
+      const km = gun.userData.knifeMesh, th = knifeSpinAcc, cz = -0.05; // 几何中心 z=-0.05（刀局部）
+      let fx = 0; if (switchAnim > 0) { fx = -Math.PI * 2 * easeOutCubic(Math.min(1, (1 - switchAnim) * 1.25)); } // 切刀：从右手旋转一圈转出
+      km.rotation.set(fx + knifeReverse, th, 0);
+      km.position.set(-cz * Math.sin(th), 0, 0.05 + cz * (1 - Math.cos(th))); // 绕几何中心旋转
+      const rhn = gun.userData.rh; if (rhn) rhn.position.z = 0.05 - 0.05 * knifeInspK; // 检视时手握在几何中心
       _tempGunPos.y += Math.sin(performance.now() * 0.002) * 0.003;
       gun.position.copy(_tempGunPos);
       gun.rotation.set(rotX + knifeRotOffset.x, rotY + knifeRotOffset.y, rotZ + knifeRotOffset.z);
+      updateKnifeTrail(dt, km);
       return;
   }
 
@@ -2821,9 +3032,9 @@ function animate() {
         if (mouseDown && currentWeaponDef.automatic && currentWeaponDef.type !== 'knife') tryShoot();
     }
     updateBullets(dt);
-    updateZombies(dt);
+    updateZombies(dt); updateAcids(dt);
     updateChunks(dt);
-    updateBloodDrops(dt);
+    updateBloodDrops(dt); updatePools(dt);
     updateDomination(dt);
     updateRangeChallenge(dt);
     const now = performance.now();
@@ -2850,6 +3061,12 @@ function animate() {
   }
 
   const tnow = performance.now();
+  if (matchStarted && !matchOver && matchTimeLeft > 0) { matchTimeLeft -= realDt; if (matchTimeLeft <= 0) { matchTimeLeft = 0; if (isHost) hostEndMatch(computeWinnerText()); } }
+  timerAcc += realDt;
+  if (timerAcc > 1) { timerAcc = 0; if (isHost && matchTimeLeft > 0) broadcastToAll({ type: 'timer', left: matchTimeLeft }); updateScoreBoardUI(); }
+  if (matchStarted && !isDead && !matchOver && gameMode !== 'zombie' && gameMode !== 'range' && playerHP > 0 && playerHP < rogueUpgrades.hpMax && tnow - lastHurt > 5000) { // 脱战回血
+      playerHP = Math.min(rogueUpgrades.hpMax, playerHP + 15 * realDt); updateHealthUI();
+  }
   for (const t of targets) {
       const u = t.userData;
       if (u.dead && tnow >= u.respawnAt) { u.dead = false; u.hp = 100; t.visible = true; for (const mm of u.meshes) { mm.visible = true; mm.material.color.setHex(mm.userData._origColor); } }
@@ -2888,7 +3105,7 @@ document.getElementById('btnResume').addEventListener('click', () => renderer.do
 document.getElementById('btnLeaveGame').addEventListener('click', leaveGame);
 
 document.getElementById('btnRespawn').addEventListener('click', () => {
-    if (!isDead) return;
+    if (!isDead || gameMode === 'duel') return;
     isDead = false;
     hideDeathScreen();
     if (gameMode === 'zombie') {
