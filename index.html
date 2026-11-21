@@ -38,12 +38,6 @@
   @keyframes fadeKillItemOut { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
 
   .kill-feedback-sub { color:#cfd8e3; font-size:11px; letter-spacing:1px; text-shadow:0 0 4px #000; white-space:nowrap; } .kill-feedback-sub b { color:#ffd24a; }
-  #hitIndicatorRoot { position: fixed; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 15; }
-  .hit-ind { position: absolute; left: 0; top: 0; width: 0; height: 0; }
-  .hit-ind::after { content: ''; position: absolute; left: -45px; top: -160px; width: 90px; height: 40px; background: radial-gradient(ellipse at 50% 100%, rgba(255,30,30,0.95) 0%, rgba(255,30,30,0) 70%); }
-  .set-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 6px 0; color: #ddd; font-size: 15px; }
-  .bind-btn { min-width: 120px; padding: 6px 10px; background: #2c3e50; color: #fff; border: 1px solid #4a6078; border-radius: 6px; cursor: pointer; }
-  .bind-btn.waiting { background: #c0392b; }
   #scopeOverlay { position: fixed; inset: 0; pointer-events: none; z-index: 12; opacity: 0; transition: opacity 0.15s; }
   #scopeOverlay.active { opacity: 1; }
   .scope-vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 0%, transparent 32vmin, rgba(0,0,0,0.4) 35vmin, rgba(0,0,0,0.95) 40vmin, #000 45vmin); }
@@ -205,7 +199,6 @@
 <div id="crosshair"></div>
 <div id="hitmarker"><div class="cross-h"></div><div class="cross-v"></div><div class="diag-tl"></div><div class="diag-tr"></div><div class="diag-bl"></div><div class="diag-br"></div></div>
 <div id="damageOverlay"></div>
-<div id="hitIndicatorRoot"></div>
 <div id="invincibleHint"></div>
 <div id="killFeedbackContainer"></div>
 <div id="scopeOverlay"><div class="scope-vignette"></div><div class="scope-reticle-h"></div><div class="scope-reticle-v"></div><div class="scope-reticle-dot"></div></div>
@@ -287,7 +280,6 @@
     <button id="btnSingleRange" class="btn-grey">单机靶场</button>
     <button id="btnSingleZombie" class="btn-red">单机生化模式</button>
     <button id="btnMultiplayer" class="btn-blue">P2P 联机对战</button>
-    <button id="btnSettingsMain" class="btn-grey">设置（灵敏度 / 键位）</button>
   </div>
 </div>
 
@@ -347,20 +339,7 @@
   </div>
   <div class="menu-btns">
     <button id="btnResume" class="btn-green">继续游戏</button>
-    <button id="btnSettingsPause" class="btn-grey">设置（灵敏度 / 键位）</button>
     <button id="btnLeaveGame" class="btn-red">离开房间 / 返回主菜单</button>
-  </div>
-</div>
-
-<div id="settingsMenu" class="menu-panel hidden" style="z-index:200">
-  <h1>设置</h1>
-  <div style="max-height:60vh; overflow-y:auto; min-width:380px; padding-right:8px;">
-    <div class="set-row"><span>鼠标灵敏度 <b id="sensVal">1.00</b></span><input type="range" id="sensRange" min="0.2" max="3" step="0.05" value="1"></div>
-    <div id="bindList"></div>
-  </div>
-  <div class="menu-btns">
-    <button id="btnResetBinds" class="btn-grey">恢复默认键位</button>
-    <button id="btnCloseSettings" class="btn-green">完成</button>
   </div>
 </div>
 
@@ -374,16 +353,15 @@ const GRAVITY = 22;
 const JUMP_SPEED = 8;
 const MOUSE_SENS = 0.0022;
 const EYE_STAND = 1.6, EYE_CROUCH = 1.0, EYE_PRONE = 0.4;
-const SPEED_STAND = 3.6, SPEED_CROUCH = 1.8, SPEED_PRONE = 0.7;
-const SPRINT_SPEED = 5.6;
-const PVP_DMG_SCALE = 0.6; // 玩家对玩家伤害倍率
+const SPEED_STAND = 4.5, SPEED_CROUCH = 2.2, SPEED_PRONE = 0.8;
+const SPRINT_SPEED = 7.0;
 const INSPECT_DURATION = 2.4;
 const STEP_HEIGHT = 0.55;
 const CHUNK_LIFE = 5.0;
 const BLOOD_DROP_LIFE = 1.8;
 const FORWARD_Z = new THREE.Vector3(0, 0, 1);
 const SPAWN_INVINCIBLE_DURATION = 1.8;
-const MULTI_SPEED_MULT = 1.1;
+const MULTI_SPEED_MULT = 1.35;
 
 // ================= 音频 =================
 let audioCtx = null;
@@ -723,16 +701,6 @@ function setupMap(mapId) {
         // 集装箱 + 阶梯箱（箱1.2m → 集装箱2.4m）
         [[0, -14, 6, 2.4], [-12, 27, 6, 2.4], [12, 27, 6, 2.4], [-34, 0, 2.4, 6], [34, 0, 2.4, 6]].forEach(([x, z, w, d]) => addBox(x, z, w, d, 2.4, 0, crateMat));
         addBox(-4, -17, 2, 2, 1.2, 0, crateMat); addBox(5, 27, 2, 2, 1.2, 0, crateMat); addBox(-31, 3.5, 2, 2, 1.2, 0, crateMat); addBox(31, -3.5, 2, 2, 1.2, 0, crateMat);
-
-        // ---- 超高摩天楼（30~45m，无楼梯，无法攀爬）----
-        const towerMat = (w, h, d) => {
-            const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
-            g.fillStyle = '#3b4250'; g.fillRect(0, 0, 64, 64);
-            for (let y = 6; y < 64; y += 16) for (let x = 6; x < 64; x += 16) { g.fillStyle = Math.random() < 0.35 ? '#e8d48a' : '#1d2430'; g.fillRect(x, y, 8, 10); }
-            const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.repeat.set(Math.max(w, d) / 4, h / 4);
-            return new THREE.MeshStandardMaterial({ map: t, roughness: 0.85 });
-        };
-        [[0, -35, 12, 6, 45], [0, 36, 10, 4, 38], [-36.5, 8, 3, 6, 30], [36.5, -8, 3, 6, 30]].forEach(([x, z, w, d, h]) => addBox(x, z, w, d, h, 0, towerMat(w, h, d), false));
 
         if (gameMode === 'range') for (let i = 0; i < 6; i++) addStaticTarget(-10 + i * 4, -10, i);
     }
@@ -1124,7 +1092,7 @@ function updateAcids(dt) {
     const a = acids[i]; a.life -= dt; a.m.position.addScaledVector(a.v, dt);
     let blocked = false; for (const { box } of colliders) if (box.containsPoint(a.m.position)) { blocked = true; break; }
     const d = Math.hypot(a.m.position.x - playerPos.x, a.m.position.y - (playerPos.y + 1.0), a.m.position.z - playerPos.z);
-    if (a.life <= 0 || blocked || d < 0.7) { if (!blocked && a.life > 0 && !isDead) takeDamage(a.dmg, a.m.position); scene.remove(a.m); acids.splice(i, 1); }
+    if (a.life <= 0 || blocked || d < 0.7) { if (!blocked && a.life > 0 && !isDead) takeDamage(a.dmg); scene.remove(a.m); acids.splice(i, 1); }
   }
 }
 
@@ -1423,7 +1391,6 @@ function handleLocalTakeDamage(data) {
     if (isDead || matchOver) return;
     if (spawnInvincibleTimer > 0) return; // 无敌
     playerHP -= data.damage; lastHurt = performance.now();
-    { const rp = remotePlayers[data.shooterId]; if (rp) showHitIndicator(rp.model.position); }
     updateHealthUI();
     document.getElementById('damageOverlay').style.opacity = 1;
     setTimeout(() => { document.getElementById('damageOverlay').style.opacity = 0; }, 100);
@@ -1610,7 +1577,7 @@ function updateBoss(dt) {
         b.lookAt(playerPos.x, b.position.y, playerPos.z);
     } else if (ud.kind !== 'spitter' && now - ud.lastAttack > ud.attackCooldown) {
         ud.lastAttack = now;
-        if (!isDead) takeDamage(22 + wave * 2, b.position);
+        if (!isDead) takeDamage(22 + wave * 2);
     }
     if (ud.phase2) {
         ud.summonTimer += dt;
@@ -2025,7 +1992,7 @@ function updateZombies(dt) {
       z.lookAt(playerPos.x, z.position.y, playerPos.z);
     } else if (!ud.ranged && now - ud.lastAttack > ud.attackCooldown) {
       ud.lastAttack = now; ud.atkT = 0.3;
-      if (gameMode === 'zombie' && !isDead) takeDamage((10 + wave * 2) * (ud.dmgMult || 1), z.position);
+      if (gameMode === 'zombie' && !isDead) takeDamage((10 + wave * 2) * (ud.dmgMult || 1));
     }
     if (L) {
       const sw = Math.sin(ud.phase) * 0.7; L.legL.rotation.x = sw; L.legR.rotation.x = -sw;
@@ -2051,10 +2018,9 @@ function onZombieDeath() {
   document.getElementById('btnRespawn').textContent = '重开本波';
   deathScreenEl.classList.add('active');
 }
-function takeDamage(amount, src) {
+function takeDamage(amount) {
   if (isDead) return;
   if (spawnInvincibleTimer > 0) return;
-  amount *= 0.8; if (src) showHitIndicator(src);
   playerHP = Math.max(0, playerHP - amount); lastHurt = performance.now();
   updateHealthUI();
   document.getElementById('damageOverlay').style.opacity = 1;
@@ -2521,7 +2487,6 @@ function handleBulletHit(hit, bulletDef) {
       let damage = bulletDef.damage * rogueUpgrades.damageMult;
       if (hitType === 'head') damage = bulletDef.damage * bulletDef.headshotMultiplier * rogueUpgrades.damageMult * rogueUpgrades.headshotMult;
       if (isRemotePlayer) {
-          damage *= PVP_DMG_SCALE;
           broadcastToAll({ type: 'take_damage', targetId: remoteId, damage: damage, shooterId: myPeerId, hitType: hitType, x: hit.point.x, y: hit.point.y, z: hit.point.z, weapon: currentWeaponId });
       } else {
           applyDamage(target, damage, hitType);
@@ -2575,69 +2540,23 @@ function executeKnifeHit() {
 
 // ================= 输入 =================
 const keys = {}; const canvas = renderer.domElement;
-// ---- 设置：灵敏度 / 键位（保存到 localStorage）----
-const DEFAULT_BINDS = { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', sprint: 'ShiftLeft', crouch: 'KeyC', prone: 'KeyZ', reload: 'KeyR', inspect: 'KeyF', menu: 'KeyB', slot1: 'Digit1', slot2: 'Digit2', slot3: 'Digit3' };
-const BIND_LABELS = { forward: '前进', back: '后退', left: '左移', right: '右移', jump: '跳跃', sprint: '疾跑', crouch: '蹲下', prone: '趴下', reload: '换弹', inspect: '检视', menu: '武器库', slot1: '主武器', slot2: '手枪', slot3: '近战' };
-const binds = Object.assign({}, DEFAULT_BINDS); let userSens = 1, rebinding = null;
-try { const st = JSON.parse(localStorage.getItem('fp2ps_settings') || '{}'); if (st.sens) userSens = st.sens; if (st.binds) Object.assign(binds, st.binds); } catch (e) {}
-function saveSettings() { try { localStorage.setItem('fp2ps_settings', JSON.stringify({ sens: userSens, binds })); } catch (e) {} }
-const settingsMenuEl = document.getElementById('settingsMenu');
-function keyName(c) { return c.replace('Key', '').replace('Digit', '').replace('ShiftLeft', '左Shift').replace('ShiftRight', '右Shift').replace('Space', '空格').replace('ControlLeft', '左Ctrl').replace('Arrow', '方向'); }
-function renderBinds() {
-  const el = document.getElementById('bindList'); el.innerHTML = '';
-  for (const k in BIND_LABELS) {
-    const row = document.createElement('div'); row.className = 'set-row';
-    const sp = document.createElement('span'); sp.textContent = BIND_LABELS[k];
-    const b = document.createElement('button'); b.className = 'bind-btn' + (rebinding === k ? ' waiting' : ''); b.textContent = rebinding === k ? '按下新按键…' : keyName(binds[k]);
-    b.onclick = () => { rebinding = k; renderBinds(); };
-    row.append(sp, b); el.appendChild(row);
-  }
-}
-function openSettings() { document.getElementById('sensRange').value = userSens; document.getElementById('sensVal').textContent = userSens.toFixed(2); rebinding = null; renderBinds(); settingsMenuEl.classList.remove('hidden'); }
-document.getElementById('sensRange').addEventListener('input', e => { userSens = parseFloat(e.target.value); document.getElementById('sensVal').textContent = userSens.toFixed(2); saveSettings(); });
-document.getElementById('btnSettingsMain').addEventListener('click', openSettings);
-document.getElementById('btnSettingsPause').addEventListener('click', openSettings);
-document.getElementById('btnCloseSettings').addEventListener('click', () => { rebinding = null; settingsMenuEl.classList.add('hidden'); });
-document.getElementById('btnResetBinds').addEventListener('click', () => { Object.assign(binds, DEFAULT_BINDS); saveSettings(); renderBinds(); });
-// ---- 受击方向指示器 ----
-const hitInds = [];
-function showHitIndicator(pos) {
-  if (!pos) return;
-  const el = document.createElement('div'); el.className = 'hit-ind'; document.getElementById('hitIndicatorRoot').appendChild(el);
-  hitInds.push({ el, pos: pos.clone(), life: 1.0 });
-  if (hitInds.length > 8) { const o = hitInds.shift(); o.el.remove(); }
-}
-function updateHitIndicators(dt) {
-  for (let i = hitInds.length - 1; i >= 0; i--) {
-    const h = hitInds[i]; h.life -= dt;
-    if (h.life <= 0) { h.el.remove(); hitInds.splice(i, 1); continue; }
-    const dx = h.pos.x - playerPos.x, dz = h.pos.z - playerPos.z;
-    const ang = Math.atan2(dx * Math.cos(yaw) + dz * -Math.sin(yaw), dx * -Math.sin(yaw) + dz * -Math.cos(yaw));
-    h.el.style.transform = 'rotate(' + ang + 'rad)'; h.el.style.opacity = Math.min(1, h.life * 1.6);
-  }
-}
 let pointerLocked = false, mouseDown = false;
 
 window.addEventListener('keydown', (e) => {
-  if (rebinding) { // 正在改键
-    e.preventDefault();
-    if (e.code !== 'Escape') { for (const k in binds) if (binds[k] === e.code && k !== rebinding) binds[k] = binds[rebinding]; binds[rebinding] = e.code; saveSettings(); }
-    rebinding = null; renderBinds(); return;
-  }
   keys[e.code] = true;
-  if (e.code === binds.jump) e.preventDefault();
-  if (e.code === binds.menu && !isWeaponMenuOpen && gameMode !== 'none' && gameMode !== 'gungame' && matchStarted && !isDead && !choosingUpgrade) { toggleWeaponMenu(true); return; }
+  if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'KeyB' && !isWeaponMenuOpen && gameMode !== 'none' && gameMode !== 'gungame' && matchStarted && !isDead && !choosingUpgrade) { toggleWeaponMenu(true); return; }
   if (e.code === 'Escape' && isWeaponMenuOpen) { toggleWeaponMenu(false); return; }
   if (e.code === 'KeyT' && gameMode === 'range' && !rangeChallenge.active) { ensureAudio(); startRangeChallenge(); return; }
   if (!pointerLocked) return;
   if (isDead || choosingUpgrade) return;
-  if (e.code === binds.reload) startReload();
-  if (e.code === binds.inspect && !reloading && equipLock <= 0 && !inspecting) { inspecting = true; inspectTimer = 0; isADS = false; }
-  if (e.code === binds.slot1) equipSlot('primary');
-  if (e.code === binds.slot2) equipSlot('pistol');
-  if (e.code === binds.slot3) equipSlot('melee');
-  if (e.code === binds.crouch) { const ns = stance === 1 ? 0 : 1; if (ns !== 0 || canStand()) stance = ns; }
-  if (e.code === binds.prone) { const ns = stance === 2 ? 0 : 2; if (ns !== 0 || canStand()) stance = ns; }
+  if (e.code === 'KeyR') startReload();
+  if (e.code === 'KeyF' && !reloading && equipLock <= 0 && !inspecting) { inspecting = true; inspectTimer = 0; isADS = false; }
+  if (e.code === 'Digit1') equipSlot('primary');
+  if (e.code === 'Digit2') equipSlot('pistol');
+  if (e.code === 'Digit3') equipSlot('melee');
+  if (e.code === 'KeyC') { const ns = stance === 1 ? 0 : 1; if (ns !== 0 || canStand()) stance = ns; }
+  if (e.code === 'KeyZ') { const ns = stance === 2 ? 0 : 2; if (ns !== 0 || canStand()) stance = ns; }
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
@@ -2667,15 +2586,15 @@ document.addEventListener('click', (e) => {
   ensureAudio();
   if (pauseMenuEl.contains(e.target) || mainMenuEl.contains(e.target) || mpMenuEl.contains(e.target) ||
       weaponSelectMenu.contains(e.target) || deathScreenEl.contains(e.target) || teamSelectOverlay.contains(e.target) ||
-      upgradeSelectOverlay.contains(e.target) || settingsMenuEl.contains(e.target)) return;
+      upgradeSelectOverlay.contains(e.target)) return;
   if (!pointerLocked && gameMode !== 'none' && !isWeaponMenuOpen && !isDead && !choosingUpgrade && matchStarted) renderer.domElement.requestPointerLock();
 });
 
 document.addEventListener('mousemove', (e) => {
   if (!pointerLocked || isDead || choosingUpgrade) return;
   const sensMult = currentWeaponDef ? (1 - adsAmount * (1 - currentWeaponDef.adsSensMultiplier)) : 1;
-  yaw -= e.movementX * MOUSE_SENS * sensMult * userSens;
-  pitch -= e.movementY * MOUSE_SENS * sensMult * userSens;
+  yaw -= e.movementX * MOUSE_SENS * sensMult;
+  pitch -= e.movementY * MOUSE_SENS * sensMult;
   pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
 });
 
@@ -2779,13 +2698,13 @@ function canStand() {
 function updatePlayer(dt) {
   const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
   const move = new THREE.Vector3();
-  if (keys[binds.forward]) move.add(fwd); if (keys[binds.back]) move.sub(fwd);
-  if (keys[binds.right]) move.add(right); if (keys[binds.left]) move.sub(right);
+  if (keys['KeyW']) move.add(fwd); if (keys['KeyS']) move.sub(fwd);
+  if (keys['KeyD']) move.add(right); if (keys['KeyA']) move.sub(right);
   if (move.lengthSq() > 0) move.normalize();
 
   const isMulti = (gameMode === 'ffa' || gameMode === 'tdm' || gameMode === 'domination' || gameMode === 'duel' || gameMode === 'gungame');
   let currentBaseSpeed = stance === 1 ? SPEED_CROUCH : (stance === 2 ? SPEED_PRONE : SPEED_STAND);
-  const sprinting = keys[binds.sprint] && !isADS && !mouseDown && move.lengthSq() > 0 && stance === 0;
+  const sprinting = keys['ShiftLeft'] && !isADS && !mouseDown && move.lengthSq() > 0 && stance === 0;
   isSprinting = sprinting;
   let speed = sprinting ? SPRINT_SPEED : currentBaseSpeed;
   if (isMulti) speed *= MULTI_SPEED_MULT;
@@ -2793,7 +2712,7 @@ function updatePlayer(dt) {
 
   const k = Math.min(1, (onGround ? 20 : 4) * dt);
   playerVel.x += (move.x * speed - playerVel.x) * k; playerVel.z += (move.z * speed - playerVel.z) * k;
-  if (keys[binds.jump] && onGround && stance === 0) { playerVel.y = JUMP_SPEED; onGround = false; }
+  if (keys['Space'] && onGround && stance === 0) { playerVel.y = JUMP_SPEED; onGround = false; }
   playerVel.y -= GRAVITY * dt;
   playerPos.x += playerVel.x * dt; playerPos.z += playerVel.z * dt;
 
@@ -3141,7 +3060,6 @@ function animate() {
       const ts = rp.stance === 1 ? 0.78 : (rp.stance === 2 ? 0.5 : 1); m.scale.y += (ts - m.scale.y) * Math.min(1, 10 * realDt);
   }
 
-  updateHitIndicators(realDt);
   const tnow = performance.now();
   if (matchStarted && !matchOver && matchTimeLeft > 0) { matchTimeLeft -= realDt; if (matchTimeLeft <= 0) { matchTimeLeft = 0; if (isHost) hostEndMatch(computeWinnerText()); } }
   timerAcc += realDt;
